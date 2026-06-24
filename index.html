@@ -1,15 +1,94 @@
-{
-  "name": "PWA Test Notif",
-  "short_name": "PWATest",
-  "start_url": "./index.html",
-  "display": "standalone",
-  "background_color": "#121212",
-  "theme_color": "#ff4757",
-  "icons": [
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/1828/1828640.png",
-      "sizes": "512x512",
-      "type": "image/png"
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PWA Test Notif</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    body {
+      background-color: #121212;
+      color: #ffffff;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
     }
-  ]
-}
+    .card {
+      background: #1e1e1e;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      max-width: 300px;
+    }
+    button {
+      background: #ff4757;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background 0.2s;
+      width: 100%;
+    }
+    button:active { background: #ff6b81; }
+    .status { color: #ffa502; font-size: 14px; margin-top: 15px; }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <h2>Testeur de PWA</h2>
+    <p>Étape 1 : Autorise les notifications.<br>Étape 2 : Clique sur le bouton rouge et ferme vite l'application !</p>
+    
+    <button id="btn-notif">Tester la notification</button>
+    <div id="status" class="status">Vérification du Service Worker...</div>
+  </div>
+
+  <script>
+    let codeServiceWorker;
+
+    // Enregistrement du Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => {
+          codeServiceWorker = reg;
+          document.getElementById('status').innerText = "Application prête pour le test !";
+          document.getElementById('status').style.color = "#2ed573";
+        })
+        .catch(err => {
+          document.getElementById('status').innerText = "Erreur d'installation.";
+          document.getElementById('status').style.color = "#ff4757";
+        });
+    }
+
+    // Gestion du clic
+    document.getElementById('btn-notif').addEventListener('click', async () => {
+      // Demande la permission
+      const permission = await Notification.requestPermission();
+      
+      if (permission === 'granted') {
+        document.getElementById('status').innerText = "Lancé ! Ferme l'app maintenant...";
+        document.getElementById('status').style.color = "#ffa502";
+
+        // Envoie l'ordre au Service Worker de déclencher la notif dans 5 secondes
+        if (navigator.serviceWorker.controller) {
+          navigator.serviceWorker.controller.postMessage({ type: 'SIMULER_PUSH' });
+        } else {
+          // Secours si le SW n'est pas encore totalement actif au premier rafraîchissement
+          codeServiceWorker.active.postMessage({ type: 'SIMULER_PUSH' });
+        }
+      } else {
+        alert("Tu as refusé les notifications.");
+      }
+    });
+  </script>
+</body>
+</html>
